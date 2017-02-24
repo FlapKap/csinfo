@@ -15,6 +15,7 @@ public Plugin:myinfo = {
 	version = "0.1",
 	url = ""
 };
+
  
 public OnPluginStart() {
 	// enable socket debugging (only for testing purposes!)
@@ -27,7 +28,7 @@ public OnPluginStart() {
 	SocketBind(socket, "0.0.0.0", 50000);
 	// let the socket listen for incoming connections
 	SocketListen(socket, OnSocketIncoming);
-	CreateTimer(1.0,GatherInfoAll, _, TIMER_REPEAT);
+	
 }
 
 Handle GatherInfoOnPlayer(int i){
@@ -95,7 +96,7 @@ GatherInfoOnTeam(i){
 	return Team;
 }
 
-public Action GatherInfoAll(Handle timer) {
+public Action GatherInfoAll(Handle Timer, Handle socket) {
 	new Handle:players = json_array();
 	new Handle:teams = json_object();
 	json_object_set(teams, "Terrorist", Handle:GatherInfoOnTeam(CS_TEAM_T));
@@ -110,7 +111,7 @@ public Action GatherInfoAll(Handle timer) {
 	}
 	new String:output[1024];
 	json_dump(info, output, sizeof(output));
-	PrintToServer(output);
+	SocketSend(socket, output);
 
 	return Plugin_Continue;
 }
@@ -137,8 +138,9 @@ public OnSocketIncoming(Handle:socket, Handle:newSocket, String:remoteIP[], remo
 	SocketSetReceiveCallback(newSocket, OnChildSocketReceive);
 	SocketSetDisconnectCallback(newSocket, OnChildSocketDisconnected);
 	SocketSetErrorCallback(newSocket, OnChildSocketError);
-
-	SocketSend(newSocket, "send quit to quit\n");
+	CreateTimer(1.0,GatherInfoAll, newSocket, TIMER_REPEAT);
+		//SocketSend(newSocket, "send quit to quit\n");
+		
 }
 
 public OnSocketError(Handle:socket, const errorType, const errorNum, any:ary) {
