@@ -2,7 +2,7 @@ import socket
 import json
 HOST_ADDRESS = "localhost"
 HOST_PORT = 50000
-MSG_BUFFER = 2048
+MSG_BUFFER = 16384
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 

@@ -9,13 +9,14 @@
 #include <clients>
 
 public Plugin:myinfo = {
-	name = "Listener",
+	name = "CSGO information Gathering",
 	author = "FlapKap",
-	description = "This example provides a simple echo server. Assumes Socket 3 and",
+	description = "Assumes: Socket 3 and smjansson",
 	version = "0.1",
 	url = ""
 };
 
+new bool:cont = true;
  
 public OnPluginStart() {
 	// enable socket debugging (only for testing purposes!)
@@ -97,6 +98,8 @@ GatherInfoOnTeam(i){
 }
 
 public Action GatherInfoAll(Handle Timer, Handle socket) {
+	if(!cont) return Plugin_Stop;
+
 	new Handle:players = json_array();
 	new Handle:teams = json_object();
 	json_object_set(teams, "Terrorist", Handle:GatherInfoOnTeam(CS_TEAM_T));
@@ -109,9 +112,12 @@ public Action GatherInfoAll(Handle Timer, Handle socket) {
 	for(new i = 1; i <= MaxClients; i++){
 		if(IsClientInGame(i)) json_array_append_new(players, GatherInfoOnPlayer(i));
 	}
-	new String:output[1024];
+	new String:output[16384];
 	json_dump(info, output, sizeof(output));
 	SocketSend(socket, output);
+	CloseHandle(players);
+	CloseHandle(teams);
+	CloseHandle(info);
 
 	return Plugin_Continue;
 }
@@ -132,7 +138,7 @@ GetBotCount() {
 
 public OnSocketIncoming(Handle:socket, Handle:newSocket, String:remoteIP[], remotePort, any:arg) {
 	PrintToServer("%s:%d connected", remoteIP, remotePort);
-
+	cont = true;
 	// setup callbacks required to 'enable' newSocket
 	// newSocket won't process data until these callbacks are set
 	SocketSetReceiveCallback(newSocket, OnChildSocketReceive);
@@ -148,6 +154,7 @@ public OnSocketError(Handle:socket, const errorType, const errorNum, any:ary) {
 
 	LogError("socket error %d (errno %d)", errorType, errorNum);
 	CloseHandle(socket);
+	cont = false;
 }
 
 public OnChildSocketReceive(Handle:socket, String:receiveData[], const dataSize, any:hFile) {
@@ -159,7 +166,8 @@ public OnChildSocketReceive(Handle:socket, String:receiveData[], const dataSize,
 
 public OnChildSocketDisconnected(Handle:socket, any:hFile) {
 	// remote side disconnected
-
+	PrintToServer("client disconnected");
+	cont = false;
 	CloseHandle(socket);
 }
 
